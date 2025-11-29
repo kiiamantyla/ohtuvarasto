@@ -52,11 +52,24 @@ def add_product(warehouse_id):
         return redirect(url_for('index'))
     if request.method == 'POST':
         name = request.form['name']
-        price = float(request.form['price'])
-        quantity = int(request.form['quantity'])
+        try:
+            price = float(request.form['price'])
+            quantity = int(request.form['quantity'])
+        except ValueError:
+            return render_template(
+                'add_product.html',
+                warehouse=warehouse,
+                error='Invalid price or quantity'
+            )
         warehouse.add_product(name, price, quantity)
         return redirect(url_for('view_warehouse', warehouse_id=warehouse_id))
     return render_template('add_product.html', warehouse=warehouse)
+
+
+def _update_product(product):
+    product.name = request.form['name']
+    product.price = float(request.form['price'])
+    product.quantity = int(request.form['quantity'])
 
 
 @app.route(
@@ -71,9 +84,15 @@ def edit_product(warehouse_id, product_id):
     if not product:
         return redirect(url_for('view_warehouse', warehouse_id=warehouse_id))
     if request.method == 'POST':
-        product.name = request.form['name']
-        product.price = float(request.form['price'])
-        product.quantity = int(request.form['quantity'])
+        try:
+            _update_product(product)
+        except ValueError:
+            return render_template(
+                'edit_product.html',
+                warehouse=warehouse,
+                product=product,
+                error='Invalid price or quantity'
+            )
         return redirect(url_for('view_warehouse', warehouse_id=warehouse_id))
     return render_template(
         'edit_product.html', warehouse=warehouse, product=product
@@ -86,10 +105,11 @@ def edit_product(warehouse_id, product_id):
 )
 def delete_product(warehouse_id, product_id):
     warehouse = store.get_warehouse(warehouse_id)
-    if warehouse:
-        warehouse.delete_product(product_id)
+    if not warehouse:
+        return redirect(url_for('index'))
+    warehouse.delete_product(product_id)
     return redirect(url_for('view_warehouse', warehouse_id=warehouse_id))
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
